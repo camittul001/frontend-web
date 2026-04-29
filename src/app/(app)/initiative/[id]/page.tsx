@@ -203,9 +203,11 @@ export default function InitiativeDetailPage({
                 <Typography variant="body2">{i.address}</Typography>
               </Box>
             )}
-            <Typography variant="body2">
-              {i.lat.toFixed(4)}, {i.lng.toFixed(4)}
-            </Typography>
+            {typeof i.lat === "number" && typeof i.lng === "number" && (
+              <Typography variant="body2">
+                {i.lat.toFixed(4)}, {i.lng.toFixed(4)}
+              </Typography>
+            )}
             {i.scheduledAt && (
               <Typography variant="body2">
                 Starts {new Date(i.scheduledAt).toLocaleString()}
@@ -223,9 +225,9 @@ export default function InitiativeDetailPage({
             )}
           </Stack>
 
-          {i.tags.length > 0 && (
+          {(i.tags ?? []).length > 0 && (
             <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap" rowGap={1}>
-              {i.tags.map((t) => (
+              {(i.tags ?? []).map((t) => (
                 <Chip key={t} label={t} size="small" />
               ))}
             </Stack>
