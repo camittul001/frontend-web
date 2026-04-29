@@ -2,8 +2,24 @@
 // with the backend so data is consistent between web and mobile.
 
 export type InitiativeCategory = "cleaning" | "repair" | "plantation" | "other";
-export type InitiativeStatus = "open" | "inProgress" | "completed";
+export type InitiativeStatus =
+  | "draft"
+  | "open"
+  | "inProgress"
+  | "completed"
+  | "confirmed"
+  | "cancelled";
 export type ParticipantRole = "host" | "cohost" | "participant";
+export type PhotoKind = "before" | "after";
+
+export interface TimelineEntry {
+  at: string;
+  byId: string;
+  byName: string;
+  from: InitiativeStatus;
+  to: InitiativeStatus;
+  reason?: string | null;
+}
 
 export interface User {
   id: string;
@@ -21,6 +37,12 @@ export interface AddressComponents {
   postalCode?: string;
   state?: string;
   country?: string;
+}
+
+export interface Sponsor {
+  name: string;
+  logoKey: string;
+  websiteUrl?: string;
 }
 
 export interface Initiative {
@@ -45,6 +67,70 @@ export interface Initiative {
   addressComponents: AddressComponents | null;
   maxParticipants: number | null;
   tags: string[];
+  beforePhotos: string[];
+  afterPhotos: string[];
+  sponsors: Sponsor[];
+  participantCount: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  confirmedAt: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  timeline: TimelineEntry[];
+}
+
+// Trimmed shape returned by GET /initiatives/showcase — what the
+// home-page carousel card needs, nothing more. Full story data lives
+// on InitiativeStory.
+export interface ShowcaseItem {
+  id: string;
+  title: string;
+  category: InitiativeCategory;
+  createdBy: string;
+  createdByName: string;
+  completedAt: string | null;
+  confirmedAt: string | null;
+  beforePhoto: string | null;
+  afterPhoto: string | null;
+  sponsors: Sponsor[];
+  participantCount: number;
+  addressComponents: AddressComponents | null;
+  formattedAddress: string | null;
+}
+
+export interface ShowcasePage {
+  items: ShowcaseItem[];
+  cursor: string | null;
+  // Set when the requested city had too few rows and the API filled
+  // the rest with other-city rows. The carousel surfaces this with a
+  // subtle "Showing nationwide" label so the user knows.
+  backfilled: boolean;
+  city: string | null;
+}
+
+// Full payload from GET /initiatives/{id}/story — public, no auth.
+// Equivalent to Initiative minus host-only edit fields.
+export interface InitiativeStory {
+  id: string;
+  title: string;
+  description: string;
+  category: InitiativeCategory;
+  status: InitiativeStatus;
+  createdBy: string;
+  createdByName: string;
+  scheduledAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  confirmedAt: string | null;
+  address: string | null;
+  formattedAddress: string | null;
+  addressComponents: AddressComponents | null;
+  tags: string[];
+  beforePhotos: string[];
+  afterPhotos: string[];
+  sponsors: Sponsor[];
+  timeline: TimelineEntry[];
+  participantCount: number;
 }
 
 export interface Participant {
@@ -109,9 +195,12 @@ export const CATEGORY_LABEL: Record<InitiativeCategory, string> = {
 };
 
 export const STATUS_LABEL: Record<InitiativeStatus, string> = {
+  draft: "Draft",
   open: "Open",
   inProgress: "In Progress",
   completed: "Completed",
+  confirmed: "Confirmed",
+  cancelled: "Cancelled",
 };
 
 export const ROLE_LABEL: Record<ParticipantRole, string> = {
@@ -130,8 +219,11 @@ export function normalizeRole(s: string | null | undefined): ParticipantRole {
 export function normalizeStatus(
   s: string | null | undefined,
 ): InitiativeStatus {
+  if (s === "draft") return "draft";
   if (s === "inProgress") return "inProgress";
   if (s === "completed") return "completed";
+  if (s === "confirmed") return "confirmed";
+  if (s === "cancelled") return "cancelled";
   return "open";
 }
 

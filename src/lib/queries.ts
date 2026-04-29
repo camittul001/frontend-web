@@ -12,7 +12,8 @@ import {
   type EditInitiativeInput,
 } from "./api/initiatives";
 import { usersApi } from "./api/users";
-import type { FeedAudience, UserProfile } from "@/types";
+import { lifecycleApi, photosApi } from "./api/media";
+import type { FeedAudience, PhotoKind, UserProfile } from "@/types";
 
 // Mirrors Riverpod providers in frontend_mobile/lib/features/* — same query
 // invalidation pattern as ref.invalidate().
@@ -260,6 +261,46 @@ export function useUnblockUser() {
     mutationFn: (id: string) => usersApi.unblock(id),
     onSuccess: (_d, id) => {
       qc.invalidateQueries({ queryKey: queryKeys.profile(id) });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Lifecycle + photos (Epic 3)
+// ─────────────────────────────────────────────────────────────
+
+export function useTransitionInitiative(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      to: "open" | "inProgress" | "completed" | "cancelled";
+      reason?: string;
+    }) => lifecycleApi.transition(id, input.to, input.reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.initiative(id) });
+      qc.invalidateQueries({ queryKey: queryKeys.initiatives });
+      qc.invalidateQueries({ queryKey: queryKeys.myInitiatives });
+    },
+  });
+}
+
+export function useAttachPhotos(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { kind: PhotoKind; keys: string[] }) =>
+      photosApi.attach(id, input.kind, input.keys),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.initiative(id) });
+    },
+  });
+}
+
+export function useDeletePhoto(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (baseKey: string) => photosApi.remove(id, baseKey),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.initiative(id) });
     },
   });
 }

@@ -43,6 +43,13 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/store/auth";
 import { StatusChip } from "@/components/StatusChip";
+import { LifecycleActions } from "@/components/LifecycleActions";
+import { PhotoUploader } from "@/components/PhotoUploader";
+import { PhotoGrid } from "@/components/PhotoGrid";
+import { BeforeAfterCompare } from "@/components/BeforeAfterCompare";
+import { ActivityTimeline } from "@/components/ActivityTimeline";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
 import {
   CATEGORY_LABEL,
   ROLE_LABEL,
@@ -72,6 +79,7 @@ export default function InitiativeDetailPage({
   const [cohostUserId, setCohostUserId] = useState("");
   const [cohostUserName, setCohostUserName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [photoTab, setPhotoTab] = useState<0 | 1 | 2>(0);
 
   if (initiative.isLoading || !initiative.data) {
     return (
@@ -235,6 +243,13 @@ export default function InitiativeDetailPage({
 
           {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
 
+          {canManage && (
+            <LifecycleActions
+              initiative={i}
+              role={isHost ? "host" : isCohost ? "cohost" : null}
+            />
+          )}
+
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={1}
@@ -304,6 +319,81 @@ export default function InitiativeDetailPage({
           </List>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent>
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+            Photos
+          </Typography>
+          <Tabs
+            value={photoTab}
+            onChange={(_e, v) => setPhotoTab(v)}
+            sx={{ mb: 2 }}
+          >
+            <Tab label={`Before (${(i.beforePhotos ?? []).length})`} />
+            <Tab label={`After (${(i.afterPhotos ?? []).length})`} />
+            <Tab
+              label="Compare"
+              disabled={
+                (i.beforePhotos ?? []).length === 0 ||
+                (i.afterPhotos ?? []).length === 0
+              }
+            />
+          </Tabs>
+
+          {photoTab === 0 && (
+            <Stack spacing={2}>
+              <PhotoGrid
+                initiativeId={i.id}
+                keys={i.beforePhotos ?? []}
+                canEdit={canManage && i.status !== "completed" && i.status !== "confirmed" && i.status !== "cancelled"}
+              />
+              {canManage && i.status !== "completed" && i.status !== "confirmed" && i.status !== "cancelled" && (
+                <PhotoUploader
+                  initiativeId={i.id}
+                  kind="before"
+                  remainingSlots={Math.max(0, 8 - (i.beforePhotos ?? []).length)}
+                />
+              )}
+            </Stack>
+          )}
+          {photoTab === 1 && (
+            <Stack spacing={2}>
+              <PhotoGrid
+                initiativeId={i.id}
+                keys={i.afterPhotos ?? []}
+                canEdit={canManage && i.status !== "confirmed" && i.status !== "cancelled"}
+              />
+              {canManage && i.status !== "confirmed" && i.status !== "cancelled" && (
+                <PhotoUploader
+                  initiativeId={i.id}
+                  kind="after"
+                  remainingSlots={Math.max(0, 8 - (i.afterPhotos ?? []).length)}
+                />
+              )}
+            </Stack>
+          )}
+          {photoTab === 2 &&
+            (i.beforePhotos ?? []).length > 0 &&
+            (i.afterPhotos ?? []).length > 0 && (
+              <BeforeAfterCompare
+                beforeKey={i.beforePhotos[0]}
+                afterKey={i.afterPhotos[0]}
+              />
+            )}
+        </CardContent>
+      </Card>
+
+      {(i.timeline ?? []).length > 0 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+              Activity
+            </Typography>
+            <ActivityTimeline entries={i.timeline ?? []} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent>

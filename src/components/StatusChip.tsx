@@ -6,9 +6,12 @@ import { STATUS_LABEL } from "@/types";
 import { colors } from "@/theme/colors";
 
 const COLOR: Record<InitiativeStatus, string> = {
+  draft: "#6B7280",
   open: colors.statusOpen,
   inProgress: colors.statusInProgress,
   completed: colors.statusCompleted,
+  confirmed: "#0EA5E9",
+  cancelled: "#9CA3AF",
 };
 
 export function StatusChip({ status }: { status: InitiativeStatus }) {
