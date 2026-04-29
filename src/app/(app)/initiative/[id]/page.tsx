@@ -52,10 +52,52 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import {
   CATEGORY_LABEL,
+  getParticipationLabel,
+  isSessionCategory,
   ROLE_LABEL,
+  type InitiativeCategory,
   type Participant,
 } from "@/types";
 import { MIN_VERIFICATIONS_FOR_CONFIRMED } from "@/lib/scoring";
+import { downloadInitiativeIcs } from "@/lib/calendar";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import LaunchRoundedIcon from "@mui/icons-material/LaunchRounded";
+import CleaningServicesRoundedIcon from "@mui/icons-material/CleaningServicesRounded";
+import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
+import NatureRoundedIcon from "@mui/icons-material/NatureRounded";
+import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
+import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
+import CampaignRoundedIcon from "@mui/icons-material/CampaignRounded";
+import HealthAndSafetyRoundedIcon from "@mui/icons-material/HealthAndSafetyRounded";
+import BloodtypeOutlinedIcon from "@mui/icons-material/BloodtypeOutlined";
+import HandymanRoundedIcon from "@mui/icons-material/HandymanRounded";
+import FlagRoundedIcon from "@mui/icons-material/FlagRounded";
+
+function categoryIcon(category: InitiativeCategory) {
+  switch (category) {
+    case "cleaning":
+      return <CleaningServicesRoundedIcon />;
+    case "repair":
+      return <BuildRoundedIcon />;
+    case "plantation":
+      return <NatureRoundedIcon />;
+    case "educational":
+      return <MenuBookRoundedIcon />;
+    case "training":
+      return <SchoolRoundedIcon />;
+    case "awareness":
+      return <CampaignRoundedIcon />;
+    case "health_camp":
+      return <HealthAndSafetyRoundedIcon />;
+    case "blood_donation":
+      return <BloodtypeOutlinedIcon />;
+    case "skill_workshop":
+      return <HandymanRoundedIcon />;
+    case "other":
+    default:
+      return <FlagRoundedIcon />;
+  }
+}
 
 export default function InitiativeDetailPage({
   params,
@@ -98,12 +140,38 @@ export default function InitiativeDetailPage({
   const myVerification = verifications.data?.find((v) => v.userId === me?.id);
   const verifiedCount = verifications.data?.length ?? 0;
   const isConfirmed = verifiedCount >= MIN_VERIFICATIONS_FOR_CONFIRMED;
+  const isFull =
+    typeof i.maxParticipants === "number" && i.participantCount >= i.maxParticipants;
+  const joinLabel = isFull && i.waitlistEnabled
+    ? "Join waitlist"
+    : getParticipationLabel(i.category);
+  const joinPendingLabel = joinLabel === "Register"
+    ? "Registering…"
+    : joinLabel === "Join waitlist"
+      ? "Joining waitlist…"
+      : "Joining…";
+  const hasSessionInfo = Boolean(
+    i.mode ||
+      i.meetingLink ||
+      i.agenda ||
+      i.requirements ||
+      i.targetAudience ||
+      i.organizingEntity ||
+      i.certificateOnCompletion,
+  );
+  const showSessionSection = isSessionCategory(i.category) || hasSessionInfo;
 
   const cohosts = (participants.data ?? []).filter((p) => p.role === "cohost");
   const others = (participants.data ?? []).filter(
     (p) => p.role === "participant",
   );
+  const waitlisted = (participants.data ?? []).filter(
+    (p) => p.role === "waitlisted",
+  );
   const host = (participants.data ?? []).find((p) => p.role === "host");
+  const activeParticipantCount = (participants.data ?? []).filter(
+    (p) => p.role !== "waitlisted",
+  ).length;
 
   async function onJoin() {
     setError(null);
@@ -156,6 +224,9 @@ export default function InitiativeDetailPage({
           >
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Stack direction="row" spacing={1} alignItems="center">
+                <Avatar sx={{ bgcolor: "primary.soft", color: "primary.main" }}>
+                  {categoryIcon(i.category)}
+                </Avatar>
                 <Typography variant="h5" fontWeight={700}>
                   {i.title}
                 </Typography>
@@ -243,6 +314,12 @@ export default function InitiativeDetailPage({
 
           {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
 
+          {myParticipation?.role === "waitlisted" && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              You are currently on the waitlist. We will move you into the active list when a slot opens up.
+            </Alert>
+          )}
+
           {canManage && (
             <LifecycleActions
               initiative={i}
@@ -259,10 +336,10 @@ export default function InitiativeDetailPage({
               <Button
                 variant="contained"
                 onClick={onJoin}
-                disabled={join.isPending}
+                disabled={join.isPending || Boolean(isFull && !i.waitlistEnabled)}
                 fullWidth
               >
-                {join.isPending ? "Joining…" : "Join initiative"}
+                {join.isPending ? joinPendingLabel : joinLabel}
               </Button>
             )}
             {hasJoined && !myVerification && i.status !== "open" && (
@@ -288,13 +365,124 @@ export default function InitiativeDetailPage({
               </Button>
             )}
           </Stack>
+          {!hasJoined && isFull && !i.waitlistEnabled && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+              This initiative is currently at capacity.
+            </Typography>
+          )}
         </CardContent>
       </Card>
+
+      {showSessionSection && (
+        <Card>
+          <CardContent>
+            <Stack spacing={2}>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                justifyContent="space-between"
+                spacing={2}
+              >
+                <Box>
+                  <Typography variant="h6" fontWeight={700}>
+                    About this session
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Session-specific details for attendees, facilitators, and calendar planning.
+                  </Typography>
+                </Box>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                  {i.scheduledAt && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<DownloadRoundedIcon />}
+                      onClick={() => downloadInitiativeIcs(i)}
+                    >
+                      Add to calendar
+                    </Button>
+                  )}
+                  {i.meetingLink && (
+                    <Button
+                      component={Link}
+                      href={i.meetingLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      variant="contained"
+                      startIcon={<LaunchRoundedIcon />}
+                    >
+                      Open meeting link
+                    </Button>
+                  )}
+                </Stack>
+              </Stack>
+
+              <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
+                {i.mode && (
+                  <Chip label={`Mode: ${i.mode.replace("_", " ")}`} color="primary" variant="outlined" />
+                )}
+                {i.targetAudience && (
+                  <Chip label={`Audience: ${i.targetAudience}`} variant="outlined" />
+                )}
+                {i.organizingEntity && (
+                  <Chip label={`Organizer: ${i.organizingEntity}`} variant="outlined" />
+                )}
+              </Stack>
+
+              {i.agenda && (
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                    Agenda
+                  </Typography>
+                  <Typography sx={{ whiteSpace: "pre-wrap" }}>{i.agenda}</Typography>
+                </Box>
+              )}
+
+              {i.requirements && (
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                    Requirements
+                  </Typography>
+                  <Typography sx={{ whiteSpace: "pre-wrap" }}>{i.requirements}</Typography>
+                </Box>
+              )}
+
+              <Box
+                sx={{
+                  borderRadius: 3,
+                  border: (theme) => `1px dashed ${theme.palette.divider}`,
+                  p: 2,
+                  bgcolor: "background.default",
+                }}
+              >
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  justifyContent="space-between"
+                  spacing={2}
+                  alignItems={{ sm: "center" }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      Certificate of attendance
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {i.certificateOnCompletion
+                        ? "Certificates are planned for v2 once host issuance is enabled."
+                        : "This session does not currently issue attendance certificates."}
+                    </Typography>
+                  </Box>
+                  <Button variant="outlined" disabled>
+                    Coming in v2
+                  </Button>
+                </Stack>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent>
           <Typography variant="h6" fontWeight={700}>
-            Participants ({participants.data?.length ?? 0})
+            Participants ({activeParticipantCount})
           </Typography>
           <List>
             {host && (
@@ -317,6 +505,19 @@ export default function InitiativeDetailPage({
               </Typography>
             )}
           </List>
+          {waitlisted.length > 0 && (
+            <>
+              <Divider sx={{ my: 1.5 }} />
+              <Typography variant="subtitle1" fontWeight={700}>
+                Waitlist ({waitlisted.length})
+              </Typography>
+              <List>
+                {waitlisted.map((p) => (
+                  <ParticipantRow key={p.id} p={p} canRemove={false} onRemove={() => {}} />
+                ))}
+              </List>
+            </>
+          )}
         </CardContent>
       </Card>
 

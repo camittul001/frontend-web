@@ -6,9 +6,20 @@ import {
   Card,
   CardActionArea,
   CardContent,
+  Chip,
   Stack,
   Typography,
 } from "@mui/material";
+import CleaningServicesRoundedIcon from "@mui/icons-material/CleaningServicesRounded";
+import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
+import NatureRoundedIcon from "@mui/icons-material/NatureRounded";
+import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
+import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
+import CampaignRoundedIcon from "@mui/icons-material/CampaignRounded";
+import HealthAndSafetyRoundedIcon from "@mui/icons-material/HealthAndSafetyRounded";
+import BloodtypeOutlinedIcon from "@mui/icons-material/BloodtypeOutlined";
+import HandymanRoundedIcon from "@mui/icons-material/HandymanRounded";
+import FlagRoundedIcon from "@mui/icons-material/FlagRounded";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import EventRoundedIcon from "@mui/icons-material/EventRounded";
 import { StatusChip } from "./StatusChip";
@@ -18,6 +29,32 @@ import { formatKm } from "@/lib/distance";
 interface Props {
   initiative: Initiative;
   distanceKm?: number;
+}
+
+function categoryIcon(category: Initiative["category"]) {
+  switch (category) {
+    case "cleaning":
+      return <CleaningServicesRoundedIcon fontSize="small" />;
+    case "repair":
+      return <BuildRoundedIcon fontSize="small" />;
+    case "plantation":
+      return <NatureRoundedIcon fontSize="small" />;
+    case "educational":
+      return <MenuBookRoundedIcon fontSize="small" />;
+    case "training":
+      return <SchoolRoundedIcon fontSize="small" />;
+    case "awareness":
+      return <CampaignRoundedIcon fontSize="small" />;
+    case "health_camp":
+      return <HealthAndSafetyRoundedIcon fontSize="small" />;
+    case "blood_donation":
+      return <BloodtypeOutlinedIcon fontSize="small" />;
+    case "skill_workshop":
+      return <HandymanRoundedIcon fontSize="small" />;
+    case "other":
+    default:
+      return <FlagRoundedIcon fontSize="small" />;
+  }
 }
 
 export function InitiativeCard({ initiative, distanceKm }: Props) {
@@ -56,9 +93,12 @@ export function InitiativeCard({ initiative, distanceKm }: Props) {
             rowGap={0.5}
           >
             <Box display="inline-flex" alignItems="center" gap={0.5}>
-              <Typography variant="caption">
-                {CATEGORY_LABEL[initiative.category]}
-              </Typography>
+              <Chip
+                size="small"
+                icon={categoryIcon(initiative.category)}
+                label={CATEGORY_LABEL[initiative.category]}
+                variant="outlined"
+              />
             </Box>
             {initiative.address && (
               <Box display="inline-flex" alignItems="center" gap={0.5}>

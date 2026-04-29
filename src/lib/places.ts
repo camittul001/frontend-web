@@ -55,3 +55,71 @@ export interface ResolvedPlace {
   formattedAddress: string | null;
   addressComponents: AddressComponents | null;
 }
+
+let mapsLoadPromise: Promise<typeof google | null> | null = null;
+
+export function hasGoogleMapsKey(): boolean {
+  return GOOGLE_MAPS_KEY.trim().length > 0;
+}
+
+function asResolvedFromGeocodeResult(
+  result: google.maps.GeocoderResult,
+): ResolvedPlace | null {
+  const loc = result.geometry?.location;
+  if (!loc) return null;
+  return {
+    lat: loc.lat(),
+    lng: loc.lng(),
+    placeId: result.place_id ?? null,
+    formattedAddress: result.formatted_address ?? null,
+    addressComponents: extractAddressComponents(result.address_components),
+  };
+}
+
+export async function ensureGoogleMapsLoaded(): Promise<typeof google | null> {
+  if (typeof window === "undefined") return null;
+  if ((window as Window & { google?: typeof google }).google?.maps) {
+    return (window as Window & { google: typeof google }).google;
+  }
+  if (!hasGoogleMapsKey()) return null;
+  if (!mapsLoadPromise) {
+    mapsLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        resolve((window as Window & { google?: typeof google }).google ?? null);
+      };
+      script.onerror = () => reject(new Error("Failed to load Google Maps JS API."));
+      document.head.appendChild(script);
+    });
+  }
+  return mapsLoadPromise;
+}
+
+export async function geocodeByAddress(input: string): Promise<ResolvedPlace | null> {
+  const g = await ensureGoogleMapsLoaded();
+  if (!g) return null;
+  const geocoder = new g.maps.Geocoder();
+  const res = await geocoder.geocode({
+    address: input,
+    componentRestrictions: GOOGLE_PLACES_COUNTRY
+      ? { country: GOOGLE_PLACES_COUNTRY }
+      : undefined,
+  });
+  const first = res.results?.[0];
+  return first ? asResolvedFromGeocodeResult(first) : null;
+}
+
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<ResolvedPlace | null> {
+  const g = await ensureGoogleMapsLoaded();
+  if (!g) return null;
+  const geocoder = new g.maps.Geocoder();
+  const res = await geocoder.geocode({ location: { lat, lng } });
+  const first = res.results?.[0];
+  return first ? asResolvedFromGeocodeResult(first) : null;
+}

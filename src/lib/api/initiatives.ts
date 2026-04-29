@@ -5,6 +5,7 @@ import type {
   AddressComponents,
   Initiative,
   InitiativeCategory,
+  InitiativeMode,
   InitiativeStatus,
   LeaderboardEntry,
   Participant,
@@ -19,14 +20,22 @@ export interface CreateInitiativeInput {
   title: string;
   description: string;
   category: InitiativeCategory;
-  lat: number;
-  lng: number;
+  lat?: number | null;
+  lng?: number | null;
   scheduledAt?: string | null;
   endAt?: string | null;
   address?: string | null;
   placeId?: string | null;
   formattedAddress?: string | null;
   addressComponents?: AddressComponents | null;
+  mode?: InitiativeMode | null;
+  meetingLink?: string | null;
+  agenda?: string | null;
+  requirements?: string | null;
+  targetAudience?: string | null;
+  certificateOnCompletion?: boolean;
+  organizingEntity?: string | null;
+  waitlistEnabled?: boolean;
   maxParticipants?: number | null;
   tags?: string[];
 }
@@ -35,8 +44,8 @@ export interface EditInitiativeInput {
   title?: string;
   description?: string;
   category?: InitiativeCategory;
-  lat?: number;
-  lng?: number;
+  lat?: number | null;
+  lng?: number | null;
   status?: InitiativeStatus;
   scheduledAt?: string | null;
   endAt?: string | null;
@@ -44,6 +53,14 @@ export interface EditInitiativeInput {
   placeId?: string | null;
   formattedAddress?: string | null;
   addressComponents?: AddressComponents | null;
+  mode?: InitiativeMode | null;
+  meetingLink?: string | null;
+  agenda?: string | null;
+  requirements?: string | null;
+  targetAudience?: string | null;
+  certificateOnCompletion?: boolean;
+  organizingEntity?: string | null;
+  waitlistEnabled?: boolean;
   maxParticipants?: number | null;
   tags?: string[];
 }

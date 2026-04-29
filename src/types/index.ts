@@ -1,7 +1,18 @@
 // Wire shapes mirror frontend_mobile/lib/data/models/* — same JSON contract
 // with the backend so data is consistent between web and mobile.
 
-export type InitiativeCategory = "cleaning" | "repair" | "plantation" | "other";
+export type InitiativeCategory =
+  | "cleaning"
+  | "repair"
+  | "plantation"
+  | "educational"
+  | "training"
+  | "awareness"
+  | "health_camp"
+  | "blood_donation"
+  | "skill_workshop"
+  | "other";
+export type InitiativeMode = "in_person" | "online" | "hybrid";
 export type InitiativeStatus =
   | "draft"
   | "open"
@@ -9,7 +20,7 @@ export type InitiativeStatus =
   | "completed"
   | "confirmed"
   | "cancelled";
-export type ParticipantRole = "host" | "cohost" | "participant";
+export type ParticipantRole = "host" | "cohost" | "participant" | "waitlisted";
 export type PhotoKind = "before" | "after";
 
 export interface TimelineEntry {
@@ -65,6 +76,14 @@ export interface Initiative {
   placeId: string | null;
   formattedAddress: string | null;
   addressComponents: AddressComponents | null;
+  mode: InitiativeMode | null;
+  meetingLink: string | null;
+  agenda: string | null;
+  requirements: string | null;
+  targetAudience: string | null;
+  certificateOnCompletion: boolean;
+  organizingEntity: string | null;
+  waitlistEnabled: boolean;
   maxParticipants: number | null;
   tags: string[];
   beforePhotos: string[];
@@ -191,6 +210,12 @@ export const CATEGORY_LABEL: Record<InitiativeCategory, string> = {
   cleaning: "Cleaning",
   repair: "Repair",
   plantation: "Plantation",
+  educational: "Educational",
+  training: "Training",
+  awareness: "Awareness",
+  health_camp: "Health Camp",
+  blood_donation: "Blood Donation",
+  skill_workshop: "Skill Workshop",
   other: "Other",
 };
 
@@ -207,12 +232,36 @@ export const ROLE_LABEL: Record<ParticipantRole, string> = {
   host: "Host",
   cohost: "Co-host",
   participant: "Participant",
+  waitlisted: "Waitlisted",
 };
+
+export const SESSION_CATEGORIES: InitiativeCategory[] = [
+  "educational",
+  "training",
+  "awareness",
+  "health_camp",
+  "blood_donation",
+  "skill_workshop",
+];
+
+export const REGISTRATION_CATEGORIES: InitiativeCategory[] = [
+  "educational",
+  "training",
+];
+
+export function isSessionCategory(category: InitiativeCategory): boolean {
+  return SESSION_CATEGORIES.includes(category);
+}
+
+export function getParticipationLabel(category: InitiativeCategory): string {
+  return REGISTRATION_CATEGORIES.includes(category) ? "Register" : "Join initiative";
+}
 
 // 'creator' is a legacy wire value (host/cohost rename).
 export function normalizeRole(s: string | null | undefined): ParticipantRole {
   if (s === "host" || s === "creator") return "host";
   if (s === "cohost") return "cohost";
+  if (s === "waitlisted") return "waitlisted";
   return "participant";
 }
 
@@ -233,5 +282,11 @@ export function normalizeCategory(
   if (s === "cleaning") return "cleaning";
   if (s === "repair") return "repair";
   if (s === "plantation") return "plantation";
+  if (s === "educational") return "educational";
+  if (s === "training") return "training";
+  if (s === "awareness") return "awareness";
+  if (s === "health_camp") return "health_camp";
+  if (s === "blood_donation") return "blood_donation";
+  if (s === "skill_workshop") return "skill_workshop";
   return "other";
 }
