@@ -14,6 +14,15 @@ export interface User {
   profileCompleted: boolean;
 }
 
+export interface AddressComponents {
+  city?: string;
+  locality?: string;
+  sublocality?: string;
+  postalCode?: string;
+  state?: string;
+  country?: string;
+}
+
 export interface Initiative {
   id: string;
   title: string;
@@ -31,6 +40,9 @@ export interface Initiative {
   scheduledAt: string | null;
   endAt: string | null;
   address: string | null;
+  placeId: string | null;
+  formattedAddress: string | null;
+  addressComponents: AddressComponents | null;
   maxParticipants: number | null;
   tags: string[];
 }
@@ -57,6 +69,37 @@ export interface LeaderboardEntry {
   score: number;
   rank: number;
 }
+
+export type ProfileVisibility = "public" | "private";
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  area: string | null;
+  city: string | null;
+  profileVisibility: ProfileVisibility;
+  followersCount: number;
+  followingCount: number;
+  hostedCount: number;
+  participatedCount: number;
+  verifiedCount: number;
+  isSelf: boolean;
+  isFollowedByMe: boolean;
+  isFollowingMe: boolean;
+}
+
+export interface FollowListEntry {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface PageResponse<T> {
+  items: T[];
+  cursor: string | null;
+}
+
+export type FeedAudience = "nearby" | "following" | "trending";
 
 export const CATEGORY_LABEL: Record<InitiativeCategory, string> = {
   cleaning: "Cleaning",

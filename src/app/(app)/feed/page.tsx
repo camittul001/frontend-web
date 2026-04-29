@@ -12,6 +12,8 @@ import {
   DialogTitle,
   Skeleton,
   Stack,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
@@ -23,10 +25,12 @@ import { FEED_RADIUS_KM } from "@/lib/scoring";
 import { InitiativeCard } from "@/components/InitiativeCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useLocationOverride } from "@/store/locationOverride";
+import type { FeedAudience } from "@/types";
 
 export default function FeedPage() {
+  const [audience, setAudience] = useState<FeedAudience>("nearby");
   const { coords, loading, error, refresh } = useUserLocation();
-  const initiatives = useInitiatives();
+  const initiatives = useInitiatives(audience);
   const setOverride = useLocationOverride((s) => s.set);
   const override = useLocationOverride((s) => s.coords);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -34,6 +38,12 @@ export default function FeedPage() {
   const [lng, setLng] = useState(coords.lng.toString());
 
   const nearby = useMemo(() => {
+    if (audience !== "nearby") {
+      return (initiatives.data ?? []).map((i) => ({
+        i,
+        d: haversineKm(coords.lat, coords.lng, i.lat, i.lng),
+      }));
+    }
     return (initiatives.data ?? [])
       .map((i) => ({
         i,
@@ -46,7 +56,7 @@ export default function FeedPage() {
           new Date(b.i.createdAt).getTime() - new Date(a.i.createdAt).getTime()
         );
       });
-  }, [initiatives.data, coords]);
+  }, [initiatives.data, coords, audience]);
 
   function applyOverride() {
     const a = parseFloat(lat);
@@ -106,6 +116,16 @@ export default function FeedPage() {
         </Alert>
       )}
 
+      <Tabs
+        value={audience}
+        onChange={(_, v) => setAudience(v as FeedAudience)}
+        variant="fullWidth"
+      >
+        <Tab value="nearby" label="Nearby" />
+        <Tab value="following" label="Following" />
+        <Tab value="trending" label="Trending" />
+      </Tabs>
+
       {initiatives.isLoading ? (
         <Stack spacing={1.5}>
           {[0, 1, 2, 3].map((i) => (
@@ -114,8 +134,16 @@ export default function FeedPage() {
         </Stack>
       ) : nearby.length === 0 ? (
         <EmptyState
-          title="No initiatives within 5 km"
-          description="Be the first to start one in your area."
+          title={
+            audience === "following"
+              ? "No initiatives from people you follow"
+              : "No initiatives within 5 km"
+          }
+          description={
+            audience === "following"
+              ? "Follow more people to see their initiatives here."
+              : "Be the first to start one in your area."
+          }
         />
       ) : (
         <Stack spacing={1.5}>

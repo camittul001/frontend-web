@@ -2,6 +2,7 @@
 
 import { api } from "./client";
 import type {
+  AddressComponents,
   Initiative,
   InitiativeCategory,
   InitiativeStatus,
@@ -23,6 +24,9 @@ export interface CreateInitiativeInput {
   scheduledAt?: string | null;
   endAt?: string | null;
   address?: string | null;
+  placeId?: string | null;
+  formattedAddress?: string | null;
+  addressComponents?: AddressComponents | null;
   maxParticipants?: number | null;
   tags?: string[];
 }
@@ -37,6 +41,9 @@ export interface EditInitiativeInput {
   scheduledAt?: string | null;
   endAt?: string | null;
   address?: string | null;
+  placeId?: string | null;
+  formattedAddress?: string | null;
+  addressComponents?: AddressComponents | null;
   maxParticipants?: number | null;
   tags?: string[];
 }
@@ -51,10 +58,13 @@ function clean<T extends object>(obj: T): Partial<T> {
 }
 
 export const initiativesApi = {
-  list: () =>
-    api
-      .get<ListResponse<Initiative>>("/initiatives")
-      .then((r) => r.items ?? []),
+  list: (audience?: "nearby" | "following" | "trending") => {
+    const qs =
+      audience && audience !== "nearby" ? `?audience=${audience}` : "";
+    return api
+      .get<ListResponse<Initiative>>(`/initiatives${qs}`)
+      .then((r) => r.items ?? []);
+  },
 
   get: (id: string) => api.get<Initiative>(`/initiatives/${id}`),
 
